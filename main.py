@@ -1,33 +1,29 @@
 import socket
-import struct
-import sys
 
-message = b'very important data'
-multicast_group = ('224.1.1.1', 12345)
+def calculate_expression(expression):
+    try:
+        result = eval(expression)
+        return str(result)
+    except Exception as e:
+        return str(e)
 
-# Skapa UDP socket
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+def start_server():
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.bind(('127.0.0.1', 12345))
+    server.listen(5)
+    print("Servern startad på port 12345")
 
-# Ange time-to-live för meddelandet till 1
-ttl = struct.pack('b', 1)
-sock.setsockopt(socket.IPPROTO_IP, socket.IP_MULTICAST_TTL, ttl)
-
-try:
-    # Skicka data till multicastgruppen
-    print(f'sending "{message}" to {multicast_group}')
-    sent = sock.sendto(message, multicast_group)
-
-    # Vänta på svar från servern
-    print('waiting to receive')
     while True:
-        try:
-            data, server = sock.recvfrom(16)
-        except socket.timeout:
-            print('timed out, no more responses')
-            break
-        else:
-            print(f'received "{data}" from {server}')
+        client_socket, addr = server.accept()
+        print(f"Ansluten till {addr}")
 
-finally:
-    print('closing socket')
-    sock.close()
+        expression = client_socket.recv(1024).decode()
+        print(f"Från klienten: {expression}")
+
+        result = calculate_expression(expression)
+        client_socket.send(result.encode())
+
+        client_socket.close()
+
+if __name__ == "__main__":
+    start_server()
